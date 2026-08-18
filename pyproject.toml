@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "folderflow"
+version = "0.1.0"
+description = "A safe local file-organization CLI"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+folderflow = "folderflow.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

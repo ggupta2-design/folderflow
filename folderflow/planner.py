@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Mapping
 
-from .categories import classify_file
+from .categories import DEFAULT_CATEGORIES, classify_file
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,14 +41,19 @@ def _available_destination(
         counter += 1
 
 
-def build_plan(files: list[Path], root: Path) -> list[Move]:
+def build_plan(
+    files: list[Path],
+    root: Path,
+    *,
+    categories: Mapping[str, frozenset[str]] = DEFAULT_CATEGORIES,
+) -> list[Move]:
     root = root.expanduser().resolve()
     reserved: set[str] = set()
     plan: list[Move] = []
 
     for source in files:
         source = source.resolve()
-        category = classify_file(source)
+        category = classify_file(source, categories)
         destination_dir = root / category
         if source.parent == destination_dir:
             continue

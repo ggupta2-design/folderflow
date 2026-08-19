@@ -61,3 +61,17 @@ def test_summarize_plan_counts_categories(tmp_path: Path) -> None:
         "Documents": 2,
         "Images": 1,
     }
+
+
+def test_build_plan_uses_custom_categories(tmp_path: Path) -> None:
+    notebook = tmp_path / "analysis.ipynb"
+    notebook.write_text("{}", encoding="utf-8")
+
+    plan = build_plan(
+        [notebook],
+        tmp_path,
+        categories={"Notebooks": frozenset({".ipynb"})},
+    )
+
+    assert plan[0].category == "Notebooks"
+    assert plan[0].destination == tmp_path / "Notebooks" / "analysis.ipynb"

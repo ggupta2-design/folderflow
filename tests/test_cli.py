@@ -20,6 +20,28 @@ def test_plan_parser_supports_recursive_json_preview() -> None:
     assert args.as_json
 
 
+def test_plan_parser_accepts_policy_and_filter_overrides() -> None:
+    args = build_parser().parse_args([
+        "plan",
+        "downloads",
+        "--config",
+        "policy.json",
+        "--exclude",
+        "drafts/**",
+        "--exclude",
+        "*.tmp",
+        "--min-size",
+        "10",
+        "--max-size",
+        "5000",
+    ])
+
+    assert args.config == Path("policy.json")
+    assert args.exclude == ["drafts/**", "*.tmp"]
+    assert args.min_bytes == 10
+    assert args.max_bytes == 5000
+
+
 def test_apply_requires_explicit_confirmation_flag() -> None:
     args = build_parser().parse_args(["apply", "downloads"])
 

@@ -56,3 +56,37 @@ def test_scan_can_include_hidden_files(tmp_path: Path) -> None:
 def test_scan_rejects_missing_folder(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         scan_files(tmp_path / "missing")
+
+
+def test_scan_excludes_matching_names_and_paths(tmp_path: Path) -> None:
+    (tmp_path / "keep.pdf").write_text("keep", encoding="utf-8")
+    (tmp_path / "notes.tmp").write_text("temp", encoding="utf-8")
+    drafts = tmp_path / "drafts"
+    drafts.mkdir()
+    (drafts / "report.pdf").write_text("draft", encoding="utf-8")
+
+    files = scan_files(
+        tmp_path,
+        recursive=True,
+        exclude_patterns=("*.tmp", "drafts/**"),
+    )
+
+    assert [path.name for path in files] == ["keep.pdf"]
+
+
+def test_scan_filters_by_inclusive_size_bounds(tmp_path: Path) -> None:
+    small = tmp_path / "small.txt"
+    medium = tmp_path / "medium.txt"
+    large = tmp_path / "large.txt"
+    small.write_bytes(b"1")
+    medium.write_bytes(b"12345")
+    large.write_bytes(b"1234567890")
+
+    files = scan_files(tmp_path, min_bytes=5, max_bytes=9)
+
+    assert files == [medium]
+
+
+def test_scan_rejects_inverted_size_bounds(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="cannot exceed"):
+        scan_files(tmp_path, min_bytes=10, max_bytes=5)

@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+from .config import default_policy, load_policy
 from .executor import apply_plan, rollback_plan
 from .formatting import format_plan, format_plan_json
 from .manifest import read_manifest, write_manifest
@@ -12,6 +13,15 @@ def _scan_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("root", nargs="?", type=Path, default=Path("."))
     parser.add_argument("--recursive", action="store_true")
     parser.add_argument("--hidden", action="store_true", dest="include_hidden")
+    parser.add_argument("--config", type=Path, help="JSON organization policy")
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="Additional relative-path pattern to ignore (repeatable)",
+    )
+    parser.add_argument("--min-size", type=int, dest="min_bytes")
+    parser.add_argument("--max-size", type=int, dest="max_bytes")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,12 +45,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _plan(args: argparse.Namespace) -> tuple[Path, list]:
     root = args.root.expanduser().resolve()
+    policy = load_policy(args.config) if args.config else default_policy()
+    min_bytes = args.min_bytes if args.min_bytes is not None else policy.min_bytes
+    max_bytes = args.max_bytes if args.max_bytes is not None else policy.max_bytes
     files = scan_files(
         root,
         recursive=args.recursive,
         include_hidden=args.include_hidden,
+        exclude_patterns=(*policy.exclude_patterns, *args.exclude),
+        min_bytes=min_bytes,
+        max_bytes=max_bytes,
     )
-    return root, build_plan(files, root)
+    return root, build_plan(files, root, categories=policy.categories)
 
 
 def main(argv: list[str] | None = None) -> int:

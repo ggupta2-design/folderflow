@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from folderflow.cli import build_parser
+from folderflow.cli import build_parser, main
 from folderflow.formatting import format_plan, format_plan_json
 from folderflow.planner import Move
 
@@ -40,6 +40,24 @@ def test_plan_parser_accepts_policy_and_filter_overrides() -> None:
     assert args.exclude == ["drafts/**", "*.tmp"]
     assert args.min_bytes == 10
     assert args.max_bytes == 5000
+
+
+def test_validate_policy_reports_loaded_rules(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({
+        "categories": {"Notes": [".md"]},
+        "exclude_patterns": ["archive/**"],
+    }))
+
+    result = main(["validate-policy", str(policy)])
+
+    assert result == 0
+    assert capsys.readouterr().out.strip() == (
+        "Policy is valid: 1 categories, 1 exclusions."
+    )
 
 
 def test_apply_requires_explicit_confirmation_flag() -> None:

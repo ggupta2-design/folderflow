@@ -40,6 +40,12 @@ def build_parser() -> argparse.ArgumentParser:
     rollback = commands.add_parser("rollback", help="Undo moves from a manifest")
     rollback.add_argument("manifest", type=Path)
     rollback.add_argument("--yes", action="store_true", help="Confirm rollback")
+
+    validate = commands.add_parser(
+        "validate-policy",
+        help="Validate a policy without scanning files",
+    )
+    validate.add_argument("policy", type=Path)
     return parser
 
 
@@ -61,6 +67,14 @@ def _plan(args: argparse.Namespace) -> tuple[Path, list]:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.command == "validate-policy":
+        policy = load_policy(args.policy)
+        print(
+            f"Policy is valid: {len(policy.categories)} categories, "
+            f"{len(policy.exclude_patterns)} exclusions."
+        )
+        return 0
 
     if args.command == "plan":
         _, plan = _plan(args)

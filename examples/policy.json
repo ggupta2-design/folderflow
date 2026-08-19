@@ -1,0 +1,14 @@
+{
+  "categories": {
+    "School": [".pdf", ".docx", ".ipynb"],
+    "Photos": [".jpg", ".jpeg", ".png"],
+    "Archives": [".zip", ".tar", ".gz"]
+  },
+  "exclude_patterns": [
+    "drafts/**",
+    "*.tmp",
+    ".cache/**"
+  ],
+  "min_bytes": 1,
+  "max_bytes": 104857600
+}

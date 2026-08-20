@@ -76,3 +76,44 @@ def test_duplicates_command_applies_copy_threshold(
     payload = json.loads(capsys.readouterr().out)
     assert result == 0
     assert payload["total_groups"] == 0
+
+
+def test_duplicates_command_exports_json_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    (tmp_path / "one.txt").write_text("same")
+    (tmp_path / "two.txt").write_text("same")
+    report = tmp_path / "report.json"
+
+    result = main([
+        "duplicates",
+        str(tmp_path),
+        "--json",
+        "--output",
+        str(report),
+    ])
+
+    message = capsys.readouterr().out
+    payload = json.loads(report.read_text())
+    assert result == 0
+    assert "Duplicate report written to" in message
+    assert payload["total_groups"] == 1
+
+
+def test_duplicate_export_requires_force_to_replace(
+    tmp_path: Path,
+) -> None:
+    report = tmp_path / "report.txt"
+    report.write_text("old")
+
+    result = main([
+        "duplicates",
+        str(tmp_path),
+        "--output",
+        str(report),
+        "--force",
+    ])
+
+    assert result == 0
+    assert report.read_text() == "No exact duplicates found.\n"

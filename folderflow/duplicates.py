@@ -34,9 +34,12 @@ def find_duplicates(
     files: list[Path],
     *,
     chunk_size: int = 1024 * 1024,
+    minimum_copies: int = 2,
 ) -> list[DuplicateGroup]:
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive")
+    if minimum_copies < 2:
+        raise ValueError("minimum_copies must be at least 2")
 
     by_size: dict[int, list[Path]] = {}
     seen_files: set[tuple[int, int]] = set()
@@ -50,14 +53,14 @@ def find_duplicates(
 
     groups: list[DuplicateGroup] = []
     for size, candidates in by_size.items():
-        if len(candidates) < 2:
+        if len(candidates) < minimum_copies:
             continue
         by_digest: dict[str, list[Path]] = {}
         for path in candidates:
             digest = _sha256(path, chunk_size=chunk_size)
             by_digest.setdefault(digest, []).append(path)
         for digest, matches in by_digest.items():
-            if len(matches) > 1:
+            if len(matches) >= minimum_copies:
                 groups.append(DuplicateGroup(
                     digest=digest,
                     size=size,

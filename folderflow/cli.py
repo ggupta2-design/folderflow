@@ -12,6 +12,7 @@ from .formatting import (
 )
 from .manifest import read_manifest, write_manifest
 from .planner import build_plan
+from .reports import write_report
 from .scanner import scan_files
 
 
@@ -49,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _scan_options(duplicates)
     duplicates.add_argument("--json", action="store_true", dest="as_json")
+    duplicates.add_argument("--output", type=Path, help="Save the report")
+    duplicates.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing report",
+    )
     duplicates.add_argument(
         "--minimum-copies",
         type=int,
@@ -102,12 +109,24 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "duplicates":
         _, files, _ = _scan(args)
+        if args.output:
+            output_path = args.output.expanduser().resolve()
+            files = [path for path in files if path.resolve() != output_path]
         groups = find_duplicates(files, minimum_copies=args.minimum_copies)
-        print(
+        report = (
             format_duplicates_json(groups)
             if args.as_json
             else format_duplicates(groups)
         )
+        if args.output:
+            destination = write_report(
+                report,
+                args.output,
+                overwrite=args.force,
+            )
+            print(f"Duplicate report written to {destination}")
+        else:
+            print(report)
         return 0
 
     if args.command == "plan":

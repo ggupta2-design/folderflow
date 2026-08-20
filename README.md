@@ -9,7 +9,8 @@ FolderFlow is a local-first command-line tool that organizes cluttered folders s
 - Skips hidden files and symbolic links by default
 - Filters files with relative-path patterns and inclusive size limits
 - Loads validated, reusable JSON organization policies
-- Produces readable or JSON organization previews
+- Finds exact duplicates with SHA-256 content verification
+- Produces readable or JSON duplicate reports without deleting files
 - Resolves filename collisions without overwriting files
 - Requires explicit confirmation before moving or restoring anything
 - Records versioned JSON manifests for auditing and rollback
@@ -40,6 +41,24 @@ folderflow rollback ~/Downloads/.folderflow-last-run.json --yes
 
 The default manifest is stored inside the organized folder. Supply `--manifest PATH` to keep it elsewhere. Manifests contain absolute local paths and should not be committed publicly.
 
+## Find exact duplicates
+
+Duplicate scans group files only when both their sizes and SHA-256 content digests match. They ignore symbolic links, avoid counting hard links twice, and never delete or move files.
+
+```bash
+folderflow duplicates ~/Downloads --recursive
+folderflow duplicates ~/Downloads --recursive --json
+folderflow duplicates ~/Downloads --minimum-copies 3
+```
+
+Save a report for manual review:
+
+```bash
+folderflow duplicates ~/Downloads --recursive --json --output duplicates.json
+```
+
+FolderFlow refuses to overwrite an existing report unless `--force` is supplied. Reports contain absolute paths, so keep them private. See [SECURITY.md](SECURITY.md) before acting on any duplicate group.
+
 ## Custom policies
 
 A policy can replace the built-in category map, ignore relative paths, and set inclusive file-size limits in bytes. Start from [examples/policy.json](examples/policy.json):
@@ -56,12 +75,13 @@ A policy can replace the built-in category map, ignore relative paths, and set i
 }
 ```
 
-Validate a policy independently, then use the same rules for both previews and confirmed moves:
+Validate a policy independently, then use the same rules for previews, confirmed moves, and duplicate scans:
 
 ```bash
 folderflow validate-policy examples/policy.json
 folderflow plan ~/Downloads --config examples/policy.json --recursive
 folderflow apply ~/Downloads --config examples/policy.json --recursive --yes
+folderflow duplicates ~/Downloads --config examples/policy.json --recursive
 ```
 
 CLI filters can extend or override policy filters for a single run:

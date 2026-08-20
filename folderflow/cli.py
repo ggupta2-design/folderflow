@@ -2,8 +2,14 @@ import argparse
 from pathlib import Path
 
 from .config import default_policy, load_policy
+from .duplicates import find_duplicates
 from .executor import apply_plan, rollback_plan
-from .formatting import format_plan, format_plan_json
+from .formatting import (
+    format_duplicates,
+    format_duplicates_json,
+    format_plan,
+    format_plan_json,
+)
 from .manifest import read_manifest, write_manifest
 from .planner import build_plan
 from .scanner import scan_files
@@ -37,6 +43,13 @@ def build_parser() -> argparse.ArgumentParser:
     apply.add_argument("--manifest", type=Path)
     apply.add_argument("--yes", action="store_true", help="Confirm file moves")
 
+    duplicates = commands.add_parser(
+        "duplicates",
+        help="Report exact duplicate files without deleting them",
+    )
+    _scan_options(duplicates)
+    duplicates.add_argument("--json", action="store_true", dest="as_json")
+
     rollback = commands.add_parser("rollback", help="Undo moves from a manifest")
     rollback.add_argument("manifest", type=Path)
     rollback.add_argument("--yes", action="store_true", help="Confirm rollback")
@@ -49,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _plan(args: argparse.Namespace) -> tuple[Path, list]:
+def _scan(args: argparse.Namespace) -> tuple[Path, list, object]:
     root = args.root.expanduser().resolve()
     policy = load_policy(args.config) if args.config else default_policy()
     min_bytes = args.min_bytes if args.min_bytes is not None else policy.min_bytes
@@ -62,6 +75,11 @@ def _plan(args: argparse.Namespace) -> tuple[Path, list]:
         min_bytes=min_bytes,
         max_bytes=max_bytes,
     )
+    return root, files, policy
+
+
+def _plan(args: argparse.Namespace) -> tuple[Path, list]:
+    root, files, policy = _scan(args)
     return root, build_plan(files, root, categories=policy.categories)
 
 
@@ -73,6 +91,16 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
+        )
+        return 0
+
+    if args.command == "duplicates":
+        _, files, _ = _scan(args)
+        groups = find_duplicates(files)
+        print(
+            format_duplicates_json(groups)
+            if args.as_json
+            else format_duplicates(groups)
         )
         return 0
 

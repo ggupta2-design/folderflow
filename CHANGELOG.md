@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- Added exact duplicate discovery using size grouping and SHA-256 verification.
+- Added reclaimable-byte totals and deterministic group ordering.
+- Avoided counting hard links to the same underlying file more than once.
+- Added readable and machine-readable duplicate reports.
+- Added a non-destructive `duplicates` CLI command.
+- Added configurable minimum-copy thresholds.
+- Added atomic report exports with overwrite protection.
+- Reused policy exclusions and size filters for duplicate scans.
+- Documented manual review and report privacy safeguards.
+- Added unit, CLI, formatting, and report-export regression coverage.
+
 ## 0.2.0
 
 - Added validated JSON organization policies.

@@ -10,12 +10,15 @@ def test_duplicates_parser_supports_recursive_json() -> None:
         "downloads",
         "--recursive",
         "--json",
+        "--minimum-copies",
+        "3",
     ])
 
     assert args.command == "duplicates"
     assert args.root == Path("downloads")
     assert args.recursive
     assert args.as_json
+    assert args.minimum_copies == 3
 
 
 def test_duplicates_command_reports_matches(
@@ -47,6 +50,26 @@ def test_duplicates_command_honors_exclusions(
         str(tmp_path),
         "--exclude",
         "*.log",
+        "--json",
+    ])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert payload["total_groups"] == 0
+
+
+def test_duplicates_command_applies_copy_threshold(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    (tmp_path / "one.txt").write_text("same")
+    (tmp_path / "two.txt").write_text("same")
+
+    result = main([
+        "duplicates",
+        str(tmp_path),
+        "--minimum-copies",
+        "3",
         "--json",
     ])
 

@@ -49,6 +49,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _scan_options(duplicates)
     duplicates.add_argument("--json", action="store_true", dest="as_json")
+    duplicates.add_argument(
+        "--minimum-copies",
+        type=int,
+        default=2,
+        help="Only report groups with at least this many copies",
+    )
 
     rollback = commands.add_parser("rollback", help="Undo moves from a manifest")
     rollback.add_argument("manifest", type=Path)
@@ -96,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "duplicates":
         _, files, _ = _scan(args)
-        groups = find_duplicates(files)
+        groups = find_duplicates(files, minimum_copies=args.minimum_copies)
         print(
             format_duplicates_json(groups)
             if args.as_json

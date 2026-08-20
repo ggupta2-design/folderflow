@@ -31,6 +31,15 @@ def test_ignores_unique_files(tmp_path: Path) -> None:
     assert find_duplicates([one, two]) == []
 
 
+def test_filters_groups_by_minimum_copy_count(tmp_path: Path) -> None:
+    files = [tmp_path / f"copy-{index}.txt" for index in range(3)]
+    for path in files:
+        path.write_text("same")
+
+    assert find_duplicates(files, minimum_copies=3)[0].paths == tuple(files)
+    assert find_duplicates(files, minimum_copies=4) == []
+
+
 def test_does_not_count_hard_links_twice(tmp_path: Path) -> None:
     source = tmp_path / "source.bin"
     link = tmp_path / "link.bin"
@@ -46,6 +55,8 @@ def test_does_not_count_hard_links_twice(tmp_path: Path) -> None:
     assert copy in groups[0].paths
 
 
-def test_rejects_invalid_chunk_size() -> None:
+def test_rejects_invalid_options() -> None:
     with pytest.raises(ValueError, match="chunk_size must be positive"):
         find_duplicates([], chunk_size=0)
+    with pytest.raises(ValueError, match="minimum_copies must be at least 2"):
+        find_duplicates([], minimum_copies=1)

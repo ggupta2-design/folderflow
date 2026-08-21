@@ -71,3 +71,46 @@ def test_inventory_command_sorts_largest_first(
     payload = json.loads(capsys.readouterr().out)
     assert result == 0
     assert payload["files"][0]["path"].endswith("large.txt")
+
+
+def test_inventory_command_exports_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    (tmp_path / "report.pdf").write_text("document")
+    output = tmp_path / "inventory.json"
+
+    result = main([
+        "inventory",
+        str(tmp_path),
+        "--json",
+        "--output",
+        str(output),
+    ])
+
+    message = capsys.readouterr().out
+    payload = json.loads(output.read_text())
+    assert result == 0
+    assert "Inventory report written to" in message
+    assert payload["total_files"] == 1
+    assert payload["files"][0]["path"].endswith("report.pdf")
+
+
+def test_inventory_export_can_replace_existing_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    output = tmp_path / "inventory.txt"
+    output.write_text("old report")
+
+    result = main([
+        "inventory",
+        str(tmp_path),
+        "--output",
+        str(output),
+        "--force",
+    ])
+
+    capsys.readouterr()
+    assert result == 0
+    assert output.read_text() == "No files matched the inventory filters.\n"

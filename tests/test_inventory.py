@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from folderflow.inventory import build_inventory
+from folderflow.inventory import FileRecord, build_inventory, sort_inventory
 
 
 REFERENCE = 2_000_000_000.0
@@ -60,3 +60,18 @@ def test_inventory_uses_custom_categories(tmp_path: Path) -> None:
 def test_inventory_rejects_negative_age() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         build_inventory([], older_than_days=-1)
+
+
+def test_sorts_inventory_for_different_review_tasks(tmp_path: Path) -> None:
+    small_old = FileRecord(tmp_path / "z.txt", 10, 100.0, "Documents")
+    large_new = FileRecord(tmp_path / "a.txt", 100, 200.0, "Documents")
+    records = [small_old, large_new]
+
+    assert sort_inventory(records, order="path") == [large_new, small_old]
+    assert sort_inventory(records, order="largest") == [large_new, small_old]
+    assert sort_inventory(records, order="oldest") == [small_old, large_new]
+
+
+def test_rejects_unknown_inventory_order() -> None:
+    with pytest.raises(ValueError, match="Unknown inventory order"):
+        sort_inventory([], order="random")

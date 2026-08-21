@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from time import time
 
 from .config import default_policy, load_policy
 from .duplicates import find_duplicates
@@ -7,9 +8,12 @@ from .executor import apply_plan, rollback_plan
 from .formatting import (
     format_duplicates,
     format_duplicates_json,
+    format_inventory,
+    format_inventory_json,
     format_plan,
     format_plan_json,
 )
+from .inventory import build_inventory, sort_inventory
 from .manifest import read_manifest, write_manifest
 from .planner import build_plan
 from .reports import write_report
@@ -63,6 +67,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Only report groups with at least this many copies",
     )
 
+    inventory = commands.add_parser(
+        "inventory",
+        help="Report storage usage without changing files",
+    )
+    _scan_options(inventory)
+    inventory.add_argument(
+        "--older-than-days",
+        type=int,
+        help="Only include files at least this old",
+    )
+    inventory.add_argument(
+        "--sort",
+        choices=("path", "largest", "oldest"),
+        default="path",
+    )
+    inventory.add_argument("--json", action="store_true", dest="as_json")
+    inventory.add_argument("--output", type=Path, help="Save the report")
+    inventory.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing report",
+    )
+
     rollback = commands.add_parser("rollback", help="Undo moves from a manifest")
     rollback.add_argument("manifest", type=Path)
     rollback.add_argument("--yes", action="store_true", help="Confirm rollback")
@@ -105,6 +132,35 @@ def main(argv: list[str] | None = None) -> int:
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
         )
+        return 0
+
+    if args.command == "inventory":
+        _, files, policy = _scan(args)
+        if args.output:
+            output_path = args.output.expanduser().resolve()
+            files = [path for path in files if path.resolve() != output_path]
+        reference_time = time()
+        records = build_inventory(
+            files,
+            categories=policy.categories,
+            older_than_days=args.older_than_days,
+            reference_time=reference_time,
+        )
+        records = sort_inventory(records, order=args.sort)
+        report = (
+            format_inventory_json(records, reference_time=reference_time)
+            if args.as_json
+            else format_inventory(records, reference_time=reference_time)
+        )
+        if args.output:
+            destination = write_report(
+                report,
+                args.output,
+                overwrite=args.force,
+            )
+            print(f"Inventory report written to {destination}")
+        else:
+            print(report)
         return 0
 
     if args.command == "duplicates":

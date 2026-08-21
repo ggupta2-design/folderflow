@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0
+
+- Added read-only file inventories with size, modification age, and category metadata.
+- Added inclusive age filtering for focused stale-file reviews.
+- Added category-level file counts and storage totals.
+- Added readable and machine-readable inventory formats.
+- Added deterministic path, largest-first, and oldest-first ordering.
+- Added an `inventory` CLI command that reuses policy and scan filters.
+- Added atomic inventory report exports with overwrite protection.
+- Prevented an existing output report from appearing in its own inventory.
+- Documented report privacy and the limits of age-based cleanup decisions.
+- Added unit, formatting, CLI, sorting, and export regression coverage.
+
 ## 0.3.0
 
 - Added exact duplicate discovery using size grouping and SHA-256 verification.

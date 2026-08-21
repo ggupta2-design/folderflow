@@ -16,8 +16,15 @@ The `duplicates` command is read-only: it hashes file contents and reports exact
 
 Review duplicate groups manually before removing anything. FolderFlow intentionally does not provide automatic duplicate deletion. Report exports contain absolute local paths and content digests; store them privately and use `--force` only when you intend to replace an existing report.
 
+## Storage inventories
+
+The `inventory` command is also read-only. It reads file sizes and modification times, classifies paths, and generates summaries without opening file contents or changing filesystem metadata. Age filters are meant to narrow manual review; an old modification time does not prove a file is unnecessary.
+
+Inventory exports contain absolute paths, sizes, categories, and modification timestamps. Treat them as private operational data and review them before sharing.
+
 ## Sensitive information
 
-FolderFlow does not upload files or require credentials. Manifests and duplicate reports can contain absolute local paths, which may reveal usernames and directory names. Local FolderFlow manifests are ignored by Git, and reports should also be excluded before sharing a working directory.
+
+FolderFlow does not upload files or require credentials. Manifests, duplicate reports, and inventory reports can contain absolute local paths, which may reveal usernames and directory names. Local FolderFlow manifests are ignored by Git, and reports should also be excluded before sharing a working directory.
 
 Report security concerns privately through GitHub's security-reporting tools when available. Do not include confidential files, credentials, personal paths, or duplicate reports in a public issue.

@@ -11,6 +11,7 @@ FolderFlow is a local-first command-line tool that organizes cluttered folders s
 - Loads validated, reusable JSON organization policies
 - Finds exact duplicates with SHA-256 content verification
 - Produces readable or JSON duplicate reports without deleting files
+- Audits storage by file age, size, and category without changing files
 - Resolves filename collisions without overwriting files
 - Requires explicit confirmation before moving or restoring anything
 - Records versioned JSON manifests for auditing and rollback
@@ -59,6 +60,30 @@ folderflow duplicates ~/Downloads --recursive --json --output duplicates.json
 
 FolderFlow refuses to overwrite an existing report unless `--force` is supplied. Reports contain absolute paths, so keep them private. See [SECURITY.md](SECURITY.md) before acting on any duplicate group.
 
+## Audit storage usage
+
+Build a read-only inventory of a folder and summarize the number of files and bytes used by each category:
+
+```bash
+folderflow inventory ~/Downloads --recursive
+folderflow inventory ~/Downloads --recursive --json
+```
+
+Narrow the review to older files and choose an order suited to the task:
+
+```bash
+folderflow inventory ~/Downloads --older-than-days 90 --sort oldest
+folderflow inventory ~/Downloads --sort largest
+```
+
+The age boundary is inclusive. `--sort` accepts `path`, `largest`, or `oldest`. Save the report with the same overwrite protections used by duplicate reports:
+
+```bash
+folderflow inventory ~/Downloads --json --output inventory.json
+```
+
+An inventory is informational and never deletes or moves files. Modification age alone does not mean a file is safe to remove.
+
 ## Custom policies
 
 A policy can replace the built-in category map, ignore relative paths, and set inclusive file-size limits in bytes. Start from [examples/policy.json](examples/policy.json):
@@ -75,13 +100,14 @@ A policy can replace the built-in category map, ignore relative paths, and set i
 }
 ```
 
-Validate a policy independently, then use the same rules for previews, confirmed moves, and duplicate scans:
+Validate a policy independently, then use the same rules for previews, confirmed moves, duplicate scans, and storage inventories:
 
 ```bash
 folderflow validate-policy examples/policy.json
 folderflow plan ~/Downloads --config examples/policy.json --recursive
 folderflow apply ~/Downloads --config examples/policy.json --recursive --yes
 folderflow duplicates ~/Downloads --config examples/policy.json --recursive
+folderflow inventory ~/Downloads --config examples/policy.json --recursive
 ```
 
 CLI filters can extend or override policy filters for a single run:

@@ -59,3 +59,19 @@ def build_inventory(
             category=classify_file(path, categories),
         ))
     return records
+
+
+def sort_inventory(
+    records: list[FileRecord],
+    *,
+    order: str = "path",
+) -> list[FileRecord]:
+    if order == "path":
+        key = lambda record: (str(record.path).casefold(),)
+    elif order == "largest":
+        key = lambda record: (-record.size, str(record.path).casefold())
+    elif order == "oldest":
+        key = lambda record: (record.modified_at, str(record.path).casefold())
+    else:
+        raise ValueError(f"Unknown inventory order: {order}")
+    return sorted(records, key=key)

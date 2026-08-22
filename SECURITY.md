@@ -22,9 +22,14 @@ The `inventory` command is also read-only. It reads file sizes and modification 
 
 Inventory exports contain absolute paths, sizes, categories, and modification timestamps. Treat them as private operational data and review them before sharing.
 
-## Sensitive information
+## Snapshot safety
 
+Snapshot files contain relative paths, sizes, categories, and modification timestamps. Relative paths reduce accidental disclosure of usernames and source-folder locations, but filenames can still contain private information. Keep snapshots and exported comparisons private unless their contents have been reviewed.
+
+Snapshot comparison uses metadata and is not a cryptographic integrity check. It must not be used as proof that file contents are unchanged. Snapshot loading rejects absolute paths, parent traversal, duplicate paths, invalid numeric fields, and unsupported schema versions.
+
+## Sensitive information
 
 FolderFlow does not upload files or require credentials. Manifests, duplicate reports, and inventory reports can contain absolute local paths, which may reveal usernames and directory names. Local FolderFlow manifests are ignored by Git, and reports should also be excluded before sharing a working directory.
 
-Report security concerns privately through GitHub's security-reporting tools when available. Do not include confidential files, credentials, personal paths, or duplicate reports in a public issue.
+Report security concerns privately through GitHub's security-reporting tools when available. Do not include confidential files, credentials, personal paths, duplicate reports, or snapshots in a public issue.

@@ -4,6 +4,7 @@ from .analytics import summarize_inventory
 from .duplicates import DuplicateGroup
 from .inventory import FileRecord
 from .planner import Move, summarize_plan
+from .snapshot_diff import SnapshotDiff
 
 
 def format_plan(plan: list[Move]) -> str:
@@ -100,6 +101,39 @@ def format_inventory_json(
                 record.to_dict(reference_time=reference_time)
                 for record in records
             ],
+        },
+        indent=2,
+    )
+
+
+def format_snapshot_diff(diff: SnapshotDiff) -> str:
+    if not diff.has_changes:
+        return f"No changes found. Unchanged: {diff.unchanged}"
+    lines = [
+        (
+            f"Changes: {len(diff.added)} added, "
+            f"{len(diff.removed)} removed, "
+            f"{len(diff.modified)} modified, "
+            f"{diff.unchanged} unchanged"
+        )
+    ]
+    lines.extend(f"+ {entry.path}" for entry in diff.added)
+    lines.extend(f"- {entry.path}" for entry in diff.removed)
+    lines.extend(
+        (
+            f"~ {change.after.path}: "
+            f"{change.before.size} -> {change.after.size} bytes"
+        )
+        for change in diff.modified
+    )
+    return "\n".join(lines)
+
+
+def format_snapshot_diff_json(diff: SnapshotDiff) -> str:
+    return json.dumps(
+        {
+            "has_changes": diff.has_changes,
+            **diff.to_dict(),
         },
         indent=2,
     )

@@ -18,6 +18,7 @@ from .manifest import read_manifest, write_manifest
 from .planner import build_plan
 from .reports import write_report
 from .scanner import scan_files
+from .snapshots import create_snapshot, snapshot_to_json
 
 
 def _scan_options(parser: argparse.ArgumentParser) -> None:
@@ -90,6 +91,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace an existing report",
     )
 
+    snapshot = commands.add_parser(
+        "snapshot",
+        help="Capture portable folder metadata for later comparison",
+    )
+    _scan_options(snapshot)
+    snapshot.add_argument("--output", type=Path, required=True)
+    snapshot.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing snapshot",
+    )
+
     rollback = commands.add_parser("rollback", help="Undo moves from a manifest")
     rollback.add_argument("manifest", type=Path)
     rollback.add_argument("--yes", action="store_true", help="Confirm rollback")
@@ -131,6 +144,26 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
+        )
+        return 0
+
+    if args.command == "snapshot":
+        root, files, policy = _scan(args)
+        output_path = args.output.expanduser().resolve()
+        files = [path for path in files if path.resolve() != output_path]
+        snapshot = create_snapshot(
+            files,
+            root,
+            categories=policy.categories,
+        )
+        destination = write_report(
+            snapshot_to_json(snapshot),
+            args.output,
+            overwrite=args.force,
+        )
+        print(
+            f"Snapshot written to {destination} "
+            f"with {len(snapshot.entries)} files."
         )
         return 0
 

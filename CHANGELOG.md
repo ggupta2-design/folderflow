@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0
+
+- Added portable, versioned folder metadata snapshots.
+- Stored sorted relative paths instead of absolute source-folder paths.
+- Added strict snapshot schema and path-safety validation.
+- Added deterministic snapshot JSON round trips.
+- Added comparisons for added, removed, modified, and unchanged files.
+- Added readable and machine-readable change reports.
+- Added `snapshot` and `diff` CLI workflows.
+- Added atomic output handling with overwrite protection.
+- Documented metadata-comparison limitations and privacy boundaries.
+- Added model, validation, comparison, formatting, and CLI regression coverage.
+
 ## 0.4.0
 
 - Added read-only file inventories with size, modification age, and category metadata.

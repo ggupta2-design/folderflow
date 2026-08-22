@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "folderflow"
-version = "0.4.0"
+version = "0.5.0"
 description = "A safe local file-organization CLI"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -12,13 +12,16 @@ from .formatting import (
     format_inventory_json,
     format_plan,
     format_plan_json,
+    format_snapshot_diff,
+    format_snapshot_diff_json,
 )
 from .inventory import build_inventory, sort_inventory
 from .manifest import read_manifest, write_manifest
 from .planner import build_plan
 from .reports import write_report
 from .scanner import scan_files
-from .snapshots import create_snapshot, snapshot_to_json
+from .snapshot_diff import compare_snapshots
+from .snapshots import create_snapshot, snapshot_from_json, snapshot_to_json
 
 
 def _scan_options(parser: argparse.ArgumentParser) -> None:
@@ -91,6 +94,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace an existing report",
     )
 
+    diff = commands.add_parser(
+        "diff",
+        help="Compare two saved folder snapshots",
+    )
+    diff.add_argument("before", type=Path)
+    diff.add_argument("after", type=Path)
+    diff.add_argument("--json", action="store_true", dest="as_json")
+    diff.add_argument("--output", type=Path, help="Save the change report")
+    diff.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing change report",
+    )
+
     snapshot = commands.add_parser(
         "snapshot",
         help="Capture portable folder metadata for later comparison",
@@ -145,6 +162,30 @@ def main(argv: list[str] | None = None) -> int:
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
         )
+        return 0
+
+    if args.command == "diff":
+        before = snapshot_from_json(
+            args.before.expanduser().read_text(encoding="utf-8")
+        )
+        after = snapshot_from_json(
+            args.after.expanduser().read_text(encoding="utf-8")
+        )
+        diff = compare_snapshots(before, after)
+        report = (
+            format_snapshot_diff_json(diff)
+            if args.as_json
+            else format_snapshot_diff(diff)
+        )
+        if args.output:
+            destination = write_report(
+                report,
+                args.output,
+                overwrite=args.force,
+            )
+            print(f"Snapshot change report written to {destination}")
+        else:
+            print(report)
         return 0
 
     if args.command == "snapshot":

@@ -92,3 +92,31 @@ def test_rejects_invalid_snapshot_payloads(
 ) -> None:
     with pytest.raises(ValueError, match=message):
         snapshot_from_json(content)
+
+
+def test_snapshot_can_hash_file_contents(tmp_path: Path) -> None:
+    document = tmp_path / "report.txt"
+    document.write_text("hello")
+
+    snapshot = create_snapshot(
+        [document],
+        tmp_path,
+        include_checksums=True,
+    )
+
+    assert snapshot.has_checksums
+    assert snapshot.entries[0].checksum == (
+        "2cf24dba5fb0a30e26e83b2ac5b9e29e"
+        "1b161e5c1fa7425e73043362938b9824"
+    )
+    assert snapshot.to_dict()["checksums"] is True
+
+
+def test_metadata_snapshot_remains_backward_compatible(tmp_path: Path) -> None:
+    document = tmp_path / "report.txt"
+    document.write_text("hello")
+
+    snapshot = create_snapshot([document], tmp_path)
+
+    assert not snapshot.has_checksums
+    assert "checksum" not in snapshot.entries[0].to_dict()

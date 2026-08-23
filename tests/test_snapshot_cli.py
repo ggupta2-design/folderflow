@@ -11,12 +11,14 @@ def test_snapshot_parser_requires_output() -> None:
         "--recursive",
         "--output",
         "baseline.json",
+        "--checksums",
     ])
 
     assert args.command == "snapshot"
     assert args.root == Path("downloads")
     assert args.recursive
     assert args.output == Path("baseline.json")
+    assert args.checksums
 
 
 def test_snapshot_command_captures_relative_paths(
@@ -62,3 +64,30 @@ def test_snapshot_command_excludes_existing_output(
     snapshot = snapshot_from_json(output.read_text())
     assert result == 0
     assert snapshot.entries == ()
+
+
+def test_snapshot_command_hashes_contents_when_requested(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    folder = tmp_path / "downloads"
+    folder.mkdir()
+    (folder / "report.txt").write_text("hello")
+    output = tmp_path / "verified.json"
+
+    result = main([
+        "snapshot",
+        str(folder),
+        "--output",
+        str(output),
+        "--checksums",
+    ])
+
+    capsys.readouterr()
+    snapshot = snapshot_from_json(output.read_text())
+    assert result == 0
+    assert snapshot.has_checksums
+    assert snapshot.entries[0].checksum == (
+        "2cf24dba5fb0a30e26e83b2ac5b9e29e"
+        "1b161e5c1fa7425e73043362938b9824"
+    )

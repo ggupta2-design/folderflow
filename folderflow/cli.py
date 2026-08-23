@@ -104,6 +104,11 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--json", action="store_true", dest="as_json")
     check.add_argument("--output", type=Path, help="Save the verification report")
     check.add_argument(
+        "--fail-on-change",
+        action="store_true",
+        help="Return status 1 when changes are found",
+    )
+    check.add_argument(
         "--force",
         action="store_true",
         help="Replace an existing verification report",
@@ -217,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Folder check written to {destination}")
         else:
             print(report)
-        return 0
+        return 1 if args.fail_on_change and diff.has_changes else 0
 
     if args.command == "diff":
         before = snapshot_from_json(

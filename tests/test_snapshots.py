@@ -120,3 +120,30 @@ def test_metadata_snapshot_remains_backward_compatible(tmp_path: Path) -> None:
 
     assert not snapshot.has_checksums
     assert "checksum" not in snapshot.entries[0].to_dict()
+
+
+@pytest.mark.parametrize("checksum", ["ABC", "g" * 64, "a" * 63])
+def test_rejects_invalid_snapshot_checksums(checksum: str) -> None:
+    content = (
+        '{"version": 1, "created_at": "now", "entries": ['
+        '{"path": "file.txt", "size": 1, "modified_ns": 1, '
+        '"category": "Documents", "checksum": "'
+        + checksum
+        + '"}]}'
+    )
+
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        snapshot_from_json(content)
+
+
+def test_loads_legacy_snapshot_without_checksum_marker() -> None:
+    content = (
+        '{"version": 1, "created_at": "now", "entries": ['
+        '{"path": "file.txt", "size": 1, "modified_ns": 1, '
+        '"category": "Documents"}]}'
+    )
+
+    snapshot = snapshot_from_json(content)
+
+    assert snapshot.entries[0].checksum is None
+    assert not snapshot.has_checksums

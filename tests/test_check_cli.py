@@ -86,3 +86,47 @@ def test_check_command_exports_unchanged_report(
     assert "Folder check written to" in message
     assert not payload["has_changes"]
     assert payload["unchanged"] == 1
+
+
+def test_check_can_fail_when_automation_detects_changes(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    folder = tmp_path / "documents"
+    folder.mkdir()
+    document = folder / "report.txt"
+    document.write_text("before")
+    baseline = tmp_path / "baseline.json"
+    _baseline(folder, baseline)
+    document.write_text("after")
+
+    result = main([
+        "check",
+        str(baseline),
+        str(folder),
+        "--fail-on-change",
+    ])
+
+    capsys.readouterr()
+    assert result == 1
+
+
+def test_fail_on_change_succeeds_for_unchanged_folder(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    folder = tmp_path / "documents"
+    folder.mkdir()
+    (folder / "report.txt").write_text("same")
+    baseline = tmp_path / "baseline.json"
+    _baseline(folder, baseline)
+
+    result = main([
+        "check",
+        str(baseline),
+        str(folder),
+        "--fail-on-change",
+    ])
+
+    capsys.readouterr()
+    assert result == 0

@@ -115,6 +115,11 @@ def build_parser() -> argparse.ArgumentParser:
     _scan_options(snapshot)
     snapshot.add_argument("--output", type=Path, required=True)
     snapshot.add_argument(
+        "--checksums",
+        action="store_true",
+        help="Hash file contents for verified comparisons",
+    )
+    snapshot.add_argument(
         "--force",
         action="store_true",
         help="Replace an existing snapshot",
@@ -196,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
             files,
             root,
             categories=policy.categories,
+            include_checksums=args.checksums,
         )
         destination = write_report(
             snapshot_to_json(snapshot),

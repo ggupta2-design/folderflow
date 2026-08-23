@@ -24,9 +24,11 @@ Inventory exports contain absolute paths, sizes, categories, and modification ti
 
 ## Snapshot safety
 
-Snapshot files contain relative paths, sizes, categories, and modification timestamps. Relative paths reduce accidental disclosure of usernames and source-folder locations, but filenames can still contain private information. Keep snapshots and exported comparisons private unless their contents have been reviewed.
+Snapshot files contain relative paths, sizes, categories, modification timestamps, and optional SHA-256 digests. Relative paths reduce accidental disclosure of usernames and source-folder locations, but filenames and digests can still reveal private operational information. Keep snapshots and exported comparisons private unless their contents have been reviewed.
 
-Snapshot comparison uses metadata and is not a cryptographic integrity check. It must not be used as proof that file contents are unchanged. Snapshot loading rejects absolute paths, parent traversal, duplicate paths, invalid numeric fields, and unsupported schema versions.
+Metadata-only snapshots are not cryptographic integrity checks. Use `snapshot --checksums` when content verification matters; later `check` and `diff` reports clearly state whether checksums were compared. Checksums detect content differences but do not establish authorship or authorization. Protect baseline files from unauthorized replacement.
+
+Snapshot loading rejects absolute paths, parent traversal, duplicate paths, invalid numeric fields, malformed checksums, and unsupported schema versions.
 
 ## Sensitive information
 

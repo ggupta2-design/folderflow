@@ -1,3 +1,4 @@
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,14 +18,18 @@ class SnapshotEntry:
     size: int
     modified_ns: int
     category: str
+    checksum: str | None = None
 
     def to_dict(self) -> dict:
-        return {
+        payload = {
             "path": self.path,
             "size": self.size,
             "modified_ns": self.modified_ns,
             "category": self.category,
         }
+        if self.checksum is not None:
+            payload["checksum"] = self.checksum
+        return payload
 
 
 @dataclass(frozen=True)
@@ -33,12 +38,27 @@ class Snapshot:
     entries: tuple[SnapshotEntry, ...]
     version: int = SNAPSHOT_VERSION
 
+    @property
+    def has_checksums(self) -> bool:
+        return bool(self.entries) and all(
+            entry.checksum is not None for entry in self.entries
+        )
+
     def to_dict(self) -> dict:
         return {
             "version": self.version,
             "created_at": self.created_at,
+            "checksums": self.has_checksums,
             "entries": [entry.to_dict() for entry in self.entries],
         }
+
+
+def _sha256(path: Path, *, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def create_snapshot(
@@ -47,6 +67,7 @@ def create_snapshot(
     *,
     categories: Mapping[str, frozenset[str]] = DEFAULT_CATEGORIES,
     created_at: float | None = None,
+    include_checksums: bool = False,
 ) -> Snapshot:
     root = root.expanduser().resolve()
     timestamp = time() if created_at is None else created_at
@@ -60,6 +81,7 @@ def create_snapshot(
             size=stat.st_size,
             modified_ns=stat.st_mtime_ns,
             category=classify_file(resolved, categories),
+            checksum=_sha256(resolved) if include_checksums else None,
         ))
     entries.sort(key=lambda entry: entry.path.casefold())
     return Snapshot(
@@ -78,6 +100,18 @@ def snapshot_to_json(snapshot: Snapshot) -> str:
 def _require_non_negative_integer(value: object, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ValueError(f"{field} must be a non-negative integer")
+    return value
+
+
+def _validate_checksum(value: object, field: str) -> str | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{field} must be a lowercase SHA-256 digest")
     return value
 
 
@@ -128,6 +162,10 @@ def snapshot_from_json(content: str) -> Snapshot:
                 f"entries[{index}].modified_ns",
             ),
             category=category,
+            checksum=_validate_checksum(
+                raw.get("checksum"),
+                f"entries[{index}].checksum",
+            ),
         ))
 
     entries.sort(key=lambda entry: entry.path.casefold())

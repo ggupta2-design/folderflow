@@ -107,22 +107,32 @@ def format_inventory_json(
 
 
 def format_snapshot_diff(diff: SnapshotDiff) -> str:
+    verification = (
+        "Verification: SHA-256 contents compared"
+        if diff.checksums_compared
+        else "Verification: metadata only"
+    )
     if not diff.has_changes:
-        return f"No changes found. Unchanged: {diff.unchanged}"
+        return (
+            f"No changes found. Unchanged: {diff.unchanged}\n"
+            f"{verification}"
+        )
     lines = [
         (
             f"Changes: {len(diff.added)} added, "
             f"{len(diff.removed)} removed, "
             f"{len(diff.modified)} modified, "
             f"{diff.unchanged} unchanged"
-        )
+        ),
+        verification,
     ]
     lines.extend(f"+ {entry.path}" for entry in diff.added)
     lines.extend(f"- {entry.path}" for entry in diff.removed)
     lines.extend(
         (
             f"~ {change.after.path}: "
-            f"{change.before.size} -> {change.after.size} bytes"
+            f"{', '.join(change.reasons)} "
+            f"({change.before.size} -> {change.after.size} bytes)"
         )
         for change in diff.modified
     )

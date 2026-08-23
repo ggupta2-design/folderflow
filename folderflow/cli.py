@@ -22,6 +22,7 @@ from .reports import write_report
 from .scanner import scan_files
 from .snapshot_diff import compare_snapshots
 from .snapshots import create_snapshot, snapshot_from_json, snapshot_to_json
+from .verification import check_folder
 
 
 def _scan_options(parser: argparse.ArgumentParser) -> None:
@@ -92,6 +93,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Replace an existing report",
+    )
+
+    check = commands.add_parser(
+        "check",
+        help="Compare a saved snapshot with its live folder",
+    )
+    check.add_argument("baseline", type=Path)
+    _scan_options(check)
+    check.add_argument("--json", action="store_true", dest="as_json")
+    check.add_argument("--output", type=Path, help="Save the verification report")
+    check.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing verification report",
     )
 
     diff = commands.add_parser(
@@ -167,6 +182,41 @@ def main(argv: list[str] | None = None) -> int:
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
         )
+        return 0
+
+    if args.command == "check":
+        baseline_path = args.baseline.expanduser().resolve()
+        baseline = snapshot_from_json(
+            baseline_path.read_text(encoding="utf-8")
+        )
+        root, files, policy = _scan(args)
+        excluded_outputs = {baseline_path}
+        if args.output:
+            excluded_outputs.add(args.output.expanduser().resolve())
+        files = [
+            path for path in files
+            if path.resolve() not in excluded_outputs
+        ]
+        diff = check_folder(
+            baseline,
+            files,
+            root,
+            categories=policy.categories,
+        )
+        report = (
+            format_snapshot_diff_json(diff)
+            if args.as_json
+            else format_snapshot_diff(diff)
+        )
+        if args.output:
+            destination = write_report(
+                report,
+                args.output,
+                overwrite=args.force,
+            )
+            print(f"Folder check written to {destination}")
+        else:
+            print(report)
         return 0
 
     if args.command == "diff":

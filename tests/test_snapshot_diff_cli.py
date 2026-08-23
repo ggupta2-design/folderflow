@@ -72,4 +72,4 @@ def test_diff_command_exports_change_report(
     message = capsys.readouterr().out
     assert result == 0
     assert "Snapshot change report written to" in message
-    assert report.read_text() == "No changes found. Unchanged: 1\n"
+    assert report.read_text() == (\n        "No changes found. Unchanged: 1\\n"\n        "Verification: metadata only\\n"\n    )

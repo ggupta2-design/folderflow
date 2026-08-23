@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+- Added optional SHA-256 content checksums to portable snapshots.
+- Preserved compatibility with FolderFlow 0.5 metadata snapshots.
+- Added strict lowercase SHA-256 validation.
+- Added explicit size, timestamp, category, and content change reasons.
+- Marked reports as checksum-verified or metadata-only.
+- Added direct saved-baseline checks against live folders.
+- Added automation-friendly `--fail-on-change` exit statuses.
+- Excluded baseline and output files from live comparisons.
+- Documented checksum performance, privacy, and trust boundaries.
+- Added checksum, migration, diff, formatting, live-check, and CLI coverage.
+
 ## 0.5.0
 
 - Added portable, versioned folder metadata snapshots.

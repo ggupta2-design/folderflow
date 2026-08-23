@@ -12,7 +12,7 @@ FolderFlow is a local-first command-line tool that organizes cluttered folders s
 - Finds exact duplicates with SHA-256 content verification
 - Produces readable or JSON duplicate reports without deleting files
 - Audits storage by file age, size, and category without changing files
-- Captures portable metadata snapshots and explains folder changes over time
+- Captures portable snapshots with optional SHA-256 content verification
 - Resolves filename collisions without overwriting files
 - Requires explicit confirmation before moving or restoring anything
 - Records versioned JSON manifests for auditing and rollback
@@ -85,23 +85,31 @@ folderflow inventory ~/Downloads --json --output inventory.json
 
 An inventory is informational and never deletes or moves files. Modification age alone does not mean a file is safe to remove.
 
-## Track folder changes
+## Track and verify folder changes
 
-Capture two portable metadata snapshots and compare them:
-
-```bash
-folderflow snapshot ~/Documents --recursive --output before.json
-folderflow snapshot ~/Documents --recursive --output after.json
-folderflow diff before.json after.json
-```
-
-Use `--json` for machine-readable differences or `--output PATH` to save a report. Comparisons identify added, removed, modified, and unchanged paths. Snapshots store relative paths rather than the absolute source folder.
+Capture a portable baseline with SHA-256 content checksums, then compare it directly with the live folder:
 
 ```bash
-folderflow diff before.json after.json --json --output changes.json
+folderflow snapshot ~/Documents --recursive --checksums --output baseline.json
+folderflow check baseline.json ~/Documents --recursive
 ```
 
-Snapshot comparisons are read-only and metadata-based. See the [snapshot guide](docs/SNAPSHOTS.md) for the schema, validation rules, and limitations.
+Use `--json` for machine-readable results, `--output PATH` to save a report, or `--fail-on-change` to return status 1 for automation and CI:
+
+```bash
+folderflow check baseline.json ~/Documents --recursive --json --fail-on-change
+```
+
+You can also compare two saved snapshots:
+
+```bash
+folderflow snapshot ~/Documents --recursive --checksums --output after.json
+folderflow diff baseline.json after.json --json --output changes.json
+```
+
+Reports identify added, removed, modified, and unchanged paths and explain whether size, timestamp, category, or content changed. Checksummed comparisons are clearly marked as SHA-256 verified. Metadata-only snapshots from FolderFlow 0.5 remain supported.
+
+Snapshots store relative paths rather than the absolute source folder. See the [snapshot guide](docs/SNAPSHOTS.md) for the schema, validation rules, and limitations.
 
 ## Custom policies
 

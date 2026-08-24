@@ -12,6 +12,8 @@ from .formatting import (
     format_inventory_json,
     format_plan,
     format_plan_json,
+    format_cleanup_review,
+    format_cleanup_review_json,
     format_snapshot_diff,
     format_snapshot_diff_json,
 )
@@ -19,6 +21,7 @@ from .inventory import build_inventory, sort_inventory
 from .manifest import read_manifest, write_manifest
 from .planner import build_plan
 from .reports import write_report
+from .review import build_cleanup_review
 from .scanner import scan_files
 from .snapshot_diff import compare_snapshots
 from .snapshots import create_snapshot, snapshot_from_json, snapshot_to_json
@@ -93,6 +96,36 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Replace an existing report",
+    )
+
+    review = commands.add_parser(
+        "review",
+        help="Combine stale and duplicate cleanup candidates",
+    )
+    _scan_options(review)
+    review.add_argument(
+        "--older-than-days",
+        type=int,
+        default=90,
+        help="Flag files at least this old",
+    )
+    review.add_argument(
+        "--no-duplicates",
+        action="store_true",
+        help="Skip exact duplicate detection",
+    )
+    review.add_argument(
+        "--minimum-copies",
+        type=int,
+        default=2,
+        help="Minimum files in a duplicate group",
+    )
+    review.add_argument("--json", action="store_true", dest="as_json")
+    review.add_argument("--output", type=Path, help="Save the review")
+    review.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing review",
     )
 
     check = commands.add_parser(
@@ -187,6 +220,34 @@ def main(argv: list[str] | None = None) -> int:
             f"Policy is valid: {len(policy.categories)} categories, "
             f"{len(policy.exclude_patterns)} exclusions."
         )
+        return 0
+
+    if args.command == "review":
+        _, files, policy = _scan(args)
+        if args.output:
+            output_path = args.output.expanduser().resolve()
+            files = [path for path in files if path.resolve() != output_path]
+        review = build_cleanup_review(
+            files,
+            categories=policy.categories,
+            older_than_days=args.older_than_days,
+            include_duplicates=not args.no_duplicates,
+            minimum_copies=args.minimum_copies,
+        )
+        report = (
+            format_cleanup_review_json(review)
+            if args.as_json
+            else format_cleanup_review(review)
+        )
+        if args.output:
+            destination = write_report(
+                report,
+                args.output,
+                overwrite=args.force,
+            )
+            print(f"Cleanup review written to {destination}")
+        else:
+            print(report)
         return 0
 
     if args.command == "check":

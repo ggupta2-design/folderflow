@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0
+
+- Added unified cleanup reviews for stale and exact-duplicate files.
+- Added deterministic keeper selection for duplicate groups.
+- Added explicit stale and duplicate recommendation reasons.
+- Distinguished SHA-256-verified duplicates from age-based review signals.
+- Merged overlapping signals without duplicating candidate totals.
+- Added configurable age and duplicate-copy thresholds.
+- Added a `--no-duplicates` mode for metadata-only reviews.
+- Added readable and machine-readable review formats.
+- Added atomic exports with output self-exclusion and policy support.
+- Documented keeper limitations, overlapping totals, and deletion boundaries.
+- Added model, summary, formatting, CLI, export, and policy regression coverage.
+
 ## 0.6.0
 
 - Added optional SHA-256 content checksums to portable snapshots.

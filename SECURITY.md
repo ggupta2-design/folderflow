@@ -22,6 +22,12 @@ The `inventory` command is also read-only. It reads file sizes and modification 
 
 Inventory exports contain absolute paths, sizes, categories, and modification timestamps. Treat them as private operational data and review them before sharing.
 
+## Cleanup review safety
+
+The `review` command combines age metadata and exact duplicate checks but never changes files. A `stale` label is only a prompt for human review; timestamps do not prove that data is obsolete. A `verified` duplicate label confirms matching bytes, not that redundant copies are unnecessary.
+
+The selected duplicate keeper is the first sorted path, not necessarily the authoritative or best-located copy. Confirm backup requirements, ownership, and retention rules before removing candidates with separate tools. Cleanup exports contain absolute paths and must be treated as private data.
+
 ## Snapshot safety
 
 Snapshot files contain relative paths, sizes, categories, modification timestamps, and optional SHA-256 digests. Relative paths reduce accidental disclosure of usernames and source-folder locations, but filenames and digests can still reveal private operational information. Keep snapshots and exported comparisons private unless their contents have been reviewed.

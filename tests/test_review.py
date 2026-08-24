@@ -127,3 +127,24 @@ def test_serializes_review_summary(tmp_path: Path) -> None:
     assert payload["total_candidate_bytes"] == 3
     assert payload["candidates"][0]["reasons"] == ["stale"]
     assert payload["candidates"][0]["duplicate_of"] is None
+
+
+def test_applies_duplicate_copy_threshold(tmp_path: Path) -> None:
+    files = [
+        _file(tmp_path / f"copy-{index}.txt", "same")
+        for index in range(2)
+    ]
+
+    review = build_cleanup_review(
+        files,
+        minimum_copies=3,
+        reference_time=REFERENCE,
+    )
+
+    assert review.candidates == ()
+    assert review.duplicate_reclaimable_bytes == 0
+
+
+def test_rejects_invalid_duplicate_threshold() -> None:
+    with pytest.raises(ValueError, match="minimum_copies"):
+        build_cleanup_review([], minimum_copies=1)

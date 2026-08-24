@@ -65,6 +65,7 @@ def build_cleanup_review(
     categories: Mapping[str, frozenset[str]] = DEFAULT_CATEGORIES,
     older_than_days: int | None = None,
     include_duplicates: bool = True,
+    minimum_copies: int = 2,
     reference_time: float | None = None,
 ) -> CleanupReview:
     if older_than_days is None and not include_duplicates:
@@ -95,7 +96,7 @@ def build_cleanup_review(
 
     duplicate_reclaimable = 0
     if include_duplicates:
-        for group in find_duplicates(files):
+        for group in find_duplicates(\n            files,\n            minimum_copies=minimum_copies,\n        ):
             keeper, *copies = group.paths
             duplicate_reclaimable += group.reclaimable_bytes
             for copy in copies:

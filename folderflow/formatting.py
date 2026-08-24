@@ -4,6 +4,7 @@ from .analytics import summarize_inventory
 from .duplicates import DuplicateGroup
 from .inventory import FileRecord
 from .planner import Move, summarize_plan
+from .review import CleanupReview
 from .snapshot_diff import SnapshotDiff
 
 
@@ -144,6 +145,48 @@ def format_snapshot_diff_json(diff: SnapshotDiff) -> str:
         {
             "has_changes": diff.has_changes,
             **diff.to_dict(),
+        },
+        indent=2,
+    )
+
+
+def format_cleanup_review(review: CleanupReview) -> str:
+    if not review.candidates:
+        return "No cleanup candidates found."
+    lines = [
+        (
+            f"{candidate.path} [{candidate.confidence}] "
+            f"{candidate.size} bytes: {', '.join(candidate.reasons)}"
+            + (
+                f"; keep {candidate.duplicate_of}"
+                if candidate.duplicate_of is not None
+                else ""
+            )
+            + (
+                f"; {candidate.age_days} days old"
+                if candidate.age_days is not None
+                else ""
+            )
+        )
+        for candidate in review.candidates
+    ]
+    lines.append(
+        f"Total: {len(review.candidates)} candidates, "
+        f"{review.total_candidate_bytes} candidate bytes"
+    )
+    lines.append(
+        f"Exact duplicate reclaimable bytes: "
+        f"{review.duplicate_reclaimable_bytes}"
+    )
+    lines.append("Review only: no files were changed.")
+    return "\n".join(lines)
+
+
+def format_cleanup_review_json(review: CleanupReview) -> str:
+    return json.dumps(
+        {
+            "review_only": True,
+            **review.to_dict(),
         },
         indent=2,
     )

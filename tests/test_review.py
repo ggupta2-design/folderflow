@@ -91,3 +91,39 @@ def test_does_not_recommend_unique_files(tmp_path: Path) -> None:
 
     assert review.candidates == ()
     assert review.duplicate_reclaimable_bytes == 0
+
+
+def test_merges_stale_and_duplicate_reasons(tmp_path: Path) -> None:
+    keeper = _file(tmp_path / "a.txt", "same", age_days=90)
+    copy = _file(tmp_path / "b.txt", "same", age_days=90)
+
+    review = build_cleanup_review(
+        [keeper, copy],
+        older_than_days=60,
+        reference_time=REFERENCE,
+    )
+
+    candidates = {candidate.path: candidate for candidate in review.candidates}
+    assert candidates[keeper].reasons == ("stale",)
+    assert candidates[copy].reasons == ("duplicate", "stale")
+    assert candidates[copy].confidence == "verified"
+    assert review.total_candidate_bytes == 8
+    assert review.stale_bytes == 8
+    assert review.duplicate_reclaimable_bytes == 4
+
+
+def test_serializes_review_summary(tmp_path: Path) -> None:
+    old = _file(tmp_path / "old.txt", "old", age_days=100)
+
+    review = build_cleanup_review(
+        [old],
+        older_than_days=30,
+        include_duplicates=False,
+        reference_time=REFERENCE,
+    )
+    payload = review.to_dict()
+
+    assert payload["total_candidates"] == 1
+    assert payload["total_candidate_bytes"] == 3
+    assert payload["candidates"][0]["reasons"] == ["stale"]
+    assert payload["candidates"][0]["duplicate_of"] is None

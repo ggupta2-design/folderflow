@@ -58,3 +58,36 @@ def test_stale_boundary_is_inclusive(tmp_path: Path) -> None:
 def test_requires_at_least_one_review_signal() -> None:
     with pytest.raises(ValueError, match="Enable duplicate review"):
         build_cleanup_review([], include_duplicates=False)
+
+
+def test_recommends_deterministic_duplicate_copies(
+    tmp_path: Path,
+) -> None:
+    first = _file(tmp_path / "a.txt", "same")
+    second = _file(tmp_path / "b.txt", "same")
+    unique = _file(tmp_path / "unique.txt", "different")
+
+    review = build_cleanup_review(
+        [second, unique, first],
+        reference_time=REFERENCE,
+    )
+
+    assert len(review.candidates) == 1
+    candidate = review.candidates[0]
+    assert candidate.path == second
+    assert candidate.duplicate_of == first
+    assert candidate.reasons == ("duplicate",)
+    assert candidate.confidence == "verified"
+    assert review.duplicate_reclaimable_bytes == 4
+
+
+def test_does_not_recommend_unique_files(tmp_path: Path) -> None:
+    unique = _file(tmp_path / "unique.txt", "only")
+
+    review = build_cleanup_review(
+        [unique],
+        reference_time=REFERENCE,
+    )
+
+    assert review.candidates == ()
+    assert review.duplicate_reclaimable_bytes == 0

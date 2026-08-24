@@ -12,6 +12,7 @@ FolderFlow is a local-first command-line tool that organizes cluttered folders s
 - Finds exact duplicates with SHA-256 content verification
 - Produces readable or JSON duplicate reports without deleting files
 - Audits storage by file age, size, and category without changing files
+- Combines stale and duplicate signals into review-only cleanup reports
 - Captures portable snapshots with optional SHA-256 content verification
 - Resolves filename collisions without overwriting files
 - Requires explicit confirmation before moving or restoring anything
@@ -85,6 +86,23 @@ folderflow inventory ~/Downloads --json --output inventory.json
 
 An inventory is informational and never deletes or moves files. Modification age alone does not mean a file is safe to remove.
 
+## Review cleanup candidates
+
+Combine stale-file and exact-duplicate findings without changing anything:
+
+```bash
+folderflow review ~/Downloads --recursive
+folderflow review ~/Downloads --older-than-days 180 --minimum-copies 3
+```
+
+Duplicate recommendations are SHA-256 verified and include the deterministically selected keeper path. Stale-only findings remain marked for review because age alone does not make a file disposable.
+
+```bash
+folderflow review ~/Downloads --recursive --json --output cleanup.json
+```
+
+Use `--no-duplicates` when only age-based review is needed. See the [cleanup review guide](docs/CLEANUP_REVIEWS.md) before acting on any candidate.
+
 ## Track and verify folder changes
 
 Capture a portable baseline with SHA-256 content checksums, then compare it directly with the live folder:
@@ -127,7 +145,7 @@ A policy can replace the built-in category map, ignore relative paths, and set i
 }
 ```
 
-Validate a policy independently, then use the same rules for previews, confirmed moves, duplicate scans, storage inventories, and snapshots:
+Validate a policy independently, then use the same rules for previews, confirmed moves, duplicate scans, storage inventories, cleanup reviews, and snapshots:
 
 ```bash
 folderflow validate-policy examples/policy.json
@@ -135,6 +153,7 @@ folderflow plan ~/Downloads --config examples/policy.json --recursive
 folderflow apply ~/Downloads --config examples/policy.json --recursive --yes
 folderflow duplicates ~/Downloads --config examples/policy.json --recursive
 folderflow inventory ~/Downloads --config examples/policy.json --recursive
+folderflow review ~/Downloads --config examples/policy.json --recursive
 folderflow snapshot ~/Downloads --config examples/policy.json --recursive --output snapshot.json
 ```
 

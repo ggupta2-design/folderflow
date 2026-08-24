@@ -96,7 +96,10 @@ def build_cleanup_review(
 
     duplicate_reclaimable = 0
     if include_duplicates:
-        for group in find_duplicates(\n            files,\n            minimum_copies=minimum_copies,\n        ):
+        for group in find_duplicates(
+            files,
+            minimum_copies=minimum_copies,
+        ):
             keeper, *copies = group.paths
             duplicate_reclaimable += group.reclaimable_bytes
             for copy in copies:

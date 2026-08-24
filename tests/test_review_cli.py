@@ -76,3 +76,59 @@ def test_review_command_can_skip_duplicate_hashing(
     payload = json.loads(capsys.readouterr().out)
     assert result == 0
     assert payload["total_candidates"] == 0
+
+
+def test_review_command_exports_without_self_inclusion(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    output = tmp_path / "review.json"
+    output.write_text("old report")
+
+    result = main([
+        "review",
+        str(tmp_path),
+        "--older-than-days",
+        "365",
+        "--no-duplicates",
+        "--json",
+        "--output",
+        str(output),
+        "--force",
+    ])
+
+    message = capsys.readouterr().out
+    payload = json.loads(output.read_text())
+    assert result == 0
+    assert "Cleanup review written to" in message
+    assert payload["total_candidates"] == 0
+
+
+def test_review_command_uses_custom_policy_categories(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    notebook = tmp_path / "analysis.ipynb"
+    notebook.write_text("{}")
+    old_time = time() - 120 * 86400
+    os.utime(notebook, (old_time, old_time))
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({
+        "categories": {"Notebooks": [".ipynb"]},
+        "exclude_patterns": ["policy.json"],
+    }))
+
+    result = main([
+        "review",
+        str(tmp_path),
+        "--config",
+        str(policy),
+        "--older-than-days",
+        "90",
+        "--no-duplicates",
+        "--json",
+    ])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert payload["candidates"][0]["category"] == "Notebooks"
